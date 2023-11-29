@@ -2,6 +2,8 @@ const addFD = document.querySelector(".add_fd");
 const requirementTemplet = document.querySelector(".fd_input");
 const calculateButton = document.querySelector(".calculateButton");
 let FDlist = document.querySelectorAll(".fd_input");
+const resSample = document.querySelector(".result_box");
+const resContainer = document.querySelector(".result"); 
 
 class batterSet extends Set {
   isSubSet(setB) {
@@ -34,9 +36,9 @@ const getFDelement = function (fdNode) {
   return res;
 };
 
-const setSuperKeyOrNot = function (targetset, fds, R) {
-  let lastRound = targetset;
-  let thisRound = targetset;
+const setSuperKeyOrNot = function (targetSet, fds, R) {
+  let lastRound = new batterSet(targetSet);
+  let thisRound = new batterSet(targetSet);
   fds.forEach((fd) => {
     if (fd[0].isSubSet(thisRound)) {
       thisRound = thisRound.union(fd[1]);
@@ -44,7 +46,7 @@ const setSuperKeyOrNot = function (targetset, fds, R) {
   });
 
   while (!lastRound.isEqual(thisRound)) {
-    lastRound = thisRound;
+    lastRound = new batterSet(thisRound);
     fds.forEach((fd) => {
       if (fd[0].isSubSet(thisRound)) {
         thisRound = thisRound.union(fd[1]);
@@ -55,11 +57,34 @@ const setSuperKeyOrNot = function (targetset, fds, R) {
   return thisRound.isEqual(R);
 };
 
-// const findCandidate = function (targetset, fds, R) {
-//     const isSuperKey =
-// }
+const findCandidate = function (targetSet, fds, R) {
+  // const isSuperKey = setSuperKeyOrNot(targetSet, fds, R);
+  let candaditeKeys = [];
+  const subSuperKeys = [];
+
+  [...targetSet].forEach((item) => {
+    const tempSet = new batterSet(targetSet);
+    tempSet.delete(item);
+    const isTempSuperKey = setSuperKeyOrNot(tempSet, fds, R);
+    if (isTempSuperKey) subSuperKeys.push(tempSet);
+  });
+
+  if (!subSuperKeys.length) {
+    candaditeKeys.push(targetSet);
+  } else {
+    subSuperKeys.forEach((item) => {
+      candaditeKeys = candaditeKeys.concat(findCandidate(item, fds, R));
+    });
+  }
+
+  return candaditeKeys;
+};
 
 calculateButton.addEventListener("click", () => {
+  const allRes = document.querySelectorAll(".result_box");
+  allRes.forEach((item) => {
+    if (!item.classList.contains('hidden')) item.remove();
+  })
   FDlist = document.querySelectorAll(".fd_input");
   const allFDinSet = [];
   FDlist.forEach((FDNode) => allFDinSet.push(getFDelement(FDNode)));
@@ -67,4 +92,22 @@ calculateButton.addEventListener("click", () => {
   let R = new batterSet(allFDinSet.map((item) => [...item[1]]).flat()).union(
     superKey
   );
+
+  const candaditeKeys = findCandidate(superKey, allFDinSet, R);
+  const uniqueCandaditeKeys = [];
+  candaditeKeys.forEach((item) => {
+    let inSide = false;
+    uniqueCandaditeKeys.forEach((item2) => {
+      if (item.isEqual(item2)) inSide = true;
+    })
+    if (!inSide) uniqueCandaditeKeys.push(item);
+  });
+  console.log(uniqueCandaditeKeys);
+  resContainer.classList.remove('hidden');
+  uniqueCandaditeKeys.forEach((cKey) => {
+    const temp = resSample.cloneNode(true);
+    temp.textContent = Array.from(cKey).join(', ');
+    temp.classList.remove('hidden');
+    resContainer.insertBefore(temp, resSample);
+  })
 });
